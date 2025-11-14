@@ -1,57 +1,43 @@
 package id
 
 import (
-	"errors"
+	"fmt"
+	"math"
 	"strings"
 )
 
-const alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-const base = uint64(len(alphabet))
-
-var (
-	index = func() map[rune]uint64 {
-		m := make(map[rune]uint64, len(alphabet))
-		for i, r := range alphabet {
-			m[r] = uint64(i)
-		}
-		return m
-	}()
-	ErrInvalidChar = errors.New("invalid base62 character")
-)
-
-func Encode(u uint64) string {
-	if u == 0 {
+// Base62Encode encodes a number to base62
+func Base62Encode(num int64) string {
+	if num == 0 {
 		return string(alphabet[0])
 	}
-	var b []byte
-	for u > 0 {
-		r := u % base
-		b = append(b, alphabet[r])
-		u /= base
+
+	var result []byte
+	for num > 0 {
+		result = append(result, alphabet[num%base])
+		num /= base
 	}
-	// reverse
-	for i, j := 0, len(b)-1; i < j; i, j = i+1, j-1 {
-		b[i], b[j] = b[j], b[i]
+
+	// Reverse
+	for i, j := 0, len(result)-1; i < j; i, j = i+1, j-1 {
+		result[i], result[j] = result[j], result[i]
 	}
-	return string(b)
+
+	return string(result)
 }
 
-func Decode(s string) (uint64, error) {
-	var n uint64
-	for _, r := range s {
-		v, ok := index[r]
-		if !ok {
-			return 0, ErrInvalidChar
+// Base62Decode decodes a base62 string to number
+func Base62Decode(s string) (int64, error) {
+	var result int64
+
+	for i, r := range s {
+		pos := strings.IndexRune(alphabet, r)
+		if pos == -1 {
+			return 0, fmt.Errorf("invalid character: %c", r)
 		}
-		n = n*base + v
-	}
-	return n, nil
-}
 
-// Pad ensures a minimum length by left-padding with the first alphabet char (zero).
-func Pad(s string, min int) string {
-	if len(s) >= min {
-		return s
+		result += int64(pos) * int64(math.Pow(float64(base), float64(len(s)-i-1)))
 	}
-	return strings.Repeat(string(alphabet[0]), min-len(s)) + s
+
+	return result, nil
 }

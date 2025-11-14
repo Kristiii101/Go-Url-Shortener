@@ -94,7 +94,7 @@ func (r *LinksRepo) CreateSystem(ctx context.Context, canonicalURL string, expir
 		return nil, err
 	}
 
-	primary := id.Pad(id.Encode(uint64(idNum)), r.minLen)
+	primary := id.Pad(id.Encode(int64(idNum)), r.minLen)
 	candidate := primary
 
 	// try primary, then primary + one-char suffixes if key is taken (e.g., by a custom alias)

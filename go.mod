@@ -5,6 +5,7 @@ go 1.25.4
 require (
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgx/v5 v5.5.5
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 )
 
 require (
