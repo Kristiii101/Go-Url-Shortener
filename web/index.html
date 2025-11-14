@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Go URL Shortener</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            text-align: center;
+            width: 350px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        #result a {
+            color: #0077cc;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>URL Shortener</h2>
+        <input type="text" placeholder="Paste your URL here" id="urlInput">
+        <button id="shortenBtn">Shorten URL</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const btn = document.getElementById("shortenBtn");
+        const input = document.getElementById("urlInput");
+        const result = document.getElementById("result");
+
+        btn.addEventListener("click", async () => {
+            const longUrl = input.value.trim();
+
+            if (!longUrl) {
+                result.innerHTML = "<span style='color:red;'>Please enter a URL.</span>";
+                return;
+            }
+
+            // Send POST request to backend
+            try {
+                const response = await fetch("/api/shorten", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ url: longUrl })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Show shortened URL
+                    result.innerHTML = `
+                        <strong>Shortened URL:</strong><br>
+                        <a href="${data.short_url}" target="_blank">${data.short_url}</a>
+                    `;
+                } else {
+                    result.innerHTML = `<span style="color:red;">${data.error || "Error shortening URL"}</span>`;
+                }
+
+            } catch (err) {
+                console.error(err);
+                result.innerHTML = "<span style='color:red;'>Network error.</span>";
+            }
+        });
+    </script>
+</body>
+</html>
