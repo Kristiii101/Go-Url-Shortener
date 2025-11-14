@@ -5,81 +5,283 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Go URL Shortener</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Arial, sans-serif;
-            background: #f4f4f4;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
         }
 
         .container {
             background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            text-align: center;
-            width: 350px;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
         }
 
-        input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-top: 10px;
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
             margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="datetime-local"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
             font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="datetime-local"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .options-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .options-row .input-group {
+            flex: 1;
+            margin-bottom: 0;
         }
 
         button {
             width: 100%;
-            padding: 10px;
-            background: #4CAF50;
+            padding: 13px;
+            background: #667eea;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            transition: background 0.3s;
         }
 
         button:hover {
-            background: #45a049;
+            background: #5568d3;
+        }
+
+        button:active {
+            transform: scale(0.98);
         }
 
         #result {
-            margin-top: 20px;
-            font-size: 14px;
+            margin-top: 25px;
+            display: none;
         }
 
-        #result a {
-            color: #0077cc;
-            text-decoration: none;
+        .result-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .url-display {
+            margin-bottom: 15px;
+        }
+
+        .url-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .url-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .url-text {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            padding: 6px 12px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #218838;
+        }
+
+        .copy-btn.copied {
+            background: #6c757d;
+        }
+
+        .qr-section {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .qr-btn {
+            padding: 10px 20px;
+            background: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .qr-btn:hover {
+            background: #653a8a;
+        }
+
+        #qrCode {
+            margin-top: 15px;
+            display: none;
+        }
+
+        #qrCode img {
+            max-width: 200px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .hint {
+            font-size: 11px;
+            color: #999;
+            margin-top: 3px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>URL Shortener</h2>
-        <input type="text" placeholder="Paste your URL here" id="urlInput">
+        <h2>🔗 URL Shortener</h2>
+        
+        <div class="input-group">
+            <label for="urlInput">Enter your URL</label>
+            <input type="text" placeholder="https://example.com/very/long/url" id="urlInput">
+        </div>
+
+        <div class="options-row">
+            <div class="input-group">
+                <label for="customAlias">Custom Alias (Optional)</label>
+                <input type="text" placeholder="my-link" id="customAlias">
+                <div class="hint">e.g., "summer-sale"</div>
+            </div>
+
+            <div class="input-group">
+                <label for="expirationDate">Expiration (Optional)</label>
+                <input type="datetime-local" id="expirationDate">
+            </div>
+        </div>
+
         <button id="shortenBtn">Shorten URL</button>
 
-        <div id="result"></div>
+        <div id="errorMsg" class="error"></div>
+
+        <div id="result">
+            <div class="result-card">
+                <div class="url-display">
+                    <div class="url-label">Original URL</div>
+                    <div class="url-box">
+                        <div class="url-text" id="originalUrl"></div>
+                    </div>
+                    <button class="copy-btn" onclick="copyToClipboard('originalUrl', this)">Copy</button>
+                </div>
+
+                <div class="url-display">
+                    <div class="url-label">Shortened URL</div>
+                    <div class="url-box">
+                        <div class="url-text" id="shortUrl"></div>
+                    </div>
+                    <button class="copy-btn" onclick="copyToClipboard('shortUrl', this)">Copy</button>
+                </div>
+
+                <div class="qr-section">
+                    <button class="qr-btn" onclick="generateQR()">📱 Generate QR Code</button>
+                    <div id="qrCode"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const btn = document.getElementById("shortenBtn");
         const input = document.getElementById("urlInput");
+        const customAlias = document.getElementById("customAlias");
+        const expirationDate = document.getElementById("expirationDate");
         const result = document.getElementById("result");
+        const errorMsg = document.getElementById("errorMsg");
+        let currentShortUrl = "";
 
         btn.addEventListener("click", async () => {
             const longUrl = input.value.trim();
+            errorMsg.textContent = "";
+            result.style.display = "none";
 
             if (!longUrl) {
-                result.innerHTML = "<span style='color:red;'>Please enter a URL.</span>";
+                errorMsg.textContent = "Please enter a URL.";
                 return;
+            }
+
+            // Prepare request body
+            const requestBody = {
+                url: longUrl
+            };
+
+            if (customAlias.value.trim()) {
+                requestBody.custom_key = customAlias.value.trim();
+            }
+
+            if (expirationDate.value) {
+                requestBody.expiration = expirationDate.value;
             }
 
             // Send POST request to backend
@@ -89,26 +291,63 @@
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ url: longUrl })
+                    body: JSON.stringify(requestBody)
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Show shortened URL
-                    result.innerHTML = `
-                        <strong>Shortened URL:</strong><br>
-                        <a href="${data.short_url}" target="_blank">${data.short_url}</a>
-                    `;
+                    // Display results
+                    document.getElementById("originalUrl").textContent = longUrl;
+                    document.getElementById("shortUrl").textContent = data.short_url;
+                    currentShortUrl = data.short_url;
+                    
+                    result.style.display = "block";
+                    document.getElementById("qrCode").style.display = "none";
+
+                    // Clear inputs after showing results
+                    input.value = "";
+                    customAlias.value = "";
+                    expirationDate.value = "";
                 } else {
-                    result.innerHTML = `<span style="color:red;">${data.error || "Error shortening URL"}</span>`;
+                    errorMsg.textContent = data.error || "Error shortening URL";
                 }
 
             } catch (err) {
                 console.error(err);
-                result.innerHTML = "<span style='color:red;'>Network error.</span>";
+                errorMsg.textContent = "Network error. Please try again.";
             }
         });
+
+        function copyToClipboard(elementId, button) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.textContent;
+                button.textContent = "Copied!";
+                button.classList.add("copied");
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove("copied");
+                }, 2000);
+            }).catch(err => {
+                console.error("Failed to copy:", err);
+            });
+        }
+
+        function generateQR() {
+            const qrDiv = document.getElementById("qrCode");
+            
+            if (!currentShortUrl) {
+                return;
+            }
+
+            // Using a free QR code API
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentShortUrl)}`;
+            
+            qrDiv.innerHTML = `<img src="${qrApiUrl}" alt="QR Code">`;
+            qrDiv.style.display = "block";
+        }
     </script>
 </body>
 </html>

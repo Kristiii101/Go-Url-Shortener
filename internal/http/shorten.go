@@ -9,7 +9,8 @@ import (
 
 // request body structure
 type shortenRequest struct {
-	URL string `json:"url"`
+	URL       string `json:"url"`
+	CustomKey string `json:"custom_key,omitempty"`
 }
 
 // response structure
@@ -43,7 +44,15 @@ func shortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	code := generateShortCode()
+	// Use custom key if provided, otherwise generate random
+	var code string
+	if body.CustomKey != "" {
+		code = body.CustomKey
+		// TODO: Check if this alias already exists in your database
+	} else {
+		code = generateShortCode()
+	}
+
 	shortURL := "http://localhost:8080/" + code
 
 	response := shortenResponse{ShortURL: shortURL}
