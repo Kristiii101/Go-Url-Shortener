@@ -16,7 +16,7 @@ type LinksRepo interface {
 }
 
 type ClicksRepo interface {
-	Insert(ctx context.Context, linkID int64, occurredAt time.Time, visitorHash *string, countryCode *string, userAgent *string) error
+	Insert(ctx context.Context, linkID int64, occurredAt time.Time, visitorHash *string, countryCode *string, userAgent *string, referer *string) error
 }
 
 type StatsRepo interface {
