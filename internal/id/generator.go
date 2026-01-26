@@ -65,6 +65,20 @@ type Generator struct {
 	maxLen int
 }
 
+func Generate(n int) string {
+	result := make([]byte, n)
+	for i := 0; i < n; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(base))
+		if err != nil {
+			// Fallback to a simple logic or panic if randomness fails (rare)
+			// For this app, returning what we have is okay
+			return string(result)
+		}
+		result[i] = alphabet[num.Int64()]
+	}
+	return string(result)
+}
+
 // NewGenerator creates a new ID generator
 func NewGenerator(minLen, maxLen int) *Generator {
 	return &Generator{

@@ -20,18 +20,18 @@ type LinkDeps struct {
 }
 
 type createLinkRequest struct {
-	LongURL     string     `json:"long_url"`
-	CustomAlias *string    `json:"custom_alias,omitempty"`
-	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
+	LongURL     string     `json:"originalUrl"`
+	CustomAlias *string    `json:"customAlias,omitempty"`
+	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
 }
 
 type createLinkResponse struct {
-	Key              string     `json:"key"`
-	ShortURL         string     `json:"short_url"`
-	LongURLCanonical string     `json:"long_url_canonical"`
-	IsCustom         bool       `json:"is_custom"`
-	CreatedAt        time.Time  `json:"created_at"`
-	ExpiresAt        *time.Time `json:"expires_at,omitempty"`
+	Key              string     `json:"shortCode"`
+	ShortURL         string     `json:"shortUrl"`
+	LongURLCanonical string     `json:"originalUrl"`
+	IsCustom         bool       `json:"isCustom"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	ExpiresAt        *time.Time `json:"expiresAt,omitempty"`
 	Existing         bool       `json:"existing"`
 }
 
