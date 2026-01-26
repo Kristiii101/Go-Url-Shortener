@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Go Shortener</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script> <style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
         @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .slide-in { animation: slideIn 0.3s ease-out; }
         .modal { background-color: rgba(0, 0, 0, 0.5); }
@@ -14,8 +16,8 @@
 <body class="bg-slate-50 min-h-screen font-sans text-slate-800">
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <div class="text-center mb-10">
-            <h1 class="text-4xl font-extrabold text-indigo-600 mb-2 tracking-tight">🔗 Go Shortener</h1>
-            <p class="text-slate-500">Enterprise-grade URL shortening service</p>
+            <h1 class="text-4xl font-extrabold text-indigo-600 mb-2 tracking-tight">🔗 Go Shortener - Karasin Kristian</h1>
+            <p class="text-slate-500">ATAD-grade URL shortening service</p>
         </div>
 
         <div class="bg-white rounded-xl shadow-lg p-8 mb-8 border border-slate-100">
@@ -48,6 +50,7 @@
                 </div>
             </div>
             <div id="error" class="hidden mt-4 text-center text-red-500 text-sm font-semibold slide-in"></div>
+            
             <div id="qrContainer" class="hidden flex justify-center mt-4"></div>
         </div>
 
@@ -62,7 +65,7 @@
 
     <div id="statsModal" class="fixed inset-0 modal hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6 relative slide-in">
-            <button onclick="app.closeStats()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
+            <button onclick="document.getElementById('statsModal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
             <h3 class="text-xl font-bold mb-1">Analytics</h3>
             <p id="statsTitle" class="text-sm text-gray-500 mb-6 font-mono"></p>
             
@@ -80,6 +83,15 @@
             <div class="h-64">
                 <canvas id="clicksChart"></canvas>
             </div>
+        </div>
+    </div>
+
+    <div id="qrModal" class="fixed inset-0 modal hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-8 relative slide-in flex flex-col items-center max-w-sm w-full">
+            <button onclick="document.getElementById('qrModal').classList.add('hidden')" class="absolute top-2 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">✕</button>
+            <h3 class="text-lg font-bold mb-6 text-slate-700">Scan QR Code</h3>
+            <div id="qrModalContent" class="mb-4"></div>
+            <p class="text-xs text-center text-gray-400 font-mono break-all px-4" id="qrModalLink"></p>
         </div>
     </div>
 
@@ -108,6 +120,7 @@
                 errDiv.classList.add('hidden');
                 resDiv.classList.add('hidden');
                 qrDiv.innerHTML = ''; 
+                qrDiv.classList.add('hidden');
 
                 if (!url) return;
 
@@ -158,6 +171,22 @@
                 }
             }
 
+            showQRModal(url) {
+                const modal = document.getElementById('qrModal');
+                const container = document.getElementById('qrModalContent');
+                const linkText = document.getElementById('qrModalLink');
+                
+                container.innerHTML = ''; // Clear previous
+                linkText.textContent = url;
+                modal.classList.remove('hidden');
+
+                new QRCode(container, {
+                    text: url,
+                    width: 200,
+                    height: 200
+                });
+            }
+
             renderChart(dailyData) {
                 const ctx = document.getElementById('clicksChart').getContext('2d');
                 if (this.chart) this.chart.destroy();
@@ -187,36 +216,48 @@
                 });
             }
 
-            closeStats() {
-                document.getElementById('statsModal').classList.add('hidden');
-            }
-
             renderList() {
                 const list = document.getElementById('urlList');
                 list.innerHTML = this.history.map(link => `
-                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition">
-                        <div class="overflow-hidden">
-                            <a href="${link.shortUrl}" target="_blank" class="text-indigo-600 font-bold font-mono hover:underline">${link.shortCode}</a>
-                            <p class="text-xs text-gray-500 truncate w-64">${link.originalUrl}</p>
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition border border-slate-100">
+                        <div class="overflow-hidden flex-grow mr-4">
+                            <div class="flex items-center gap-3 mb-1">
+                                <a href="${link.shortUrl}" target="_blank" class="text-indigo-600 font-bold font-mono text-lg hover:underline truncate">
+                                    ${link.shortUrl}
+                                </a>
+                                <button onclick="navigator.clipboard.writeText('${link.shortUrl}'); this.innerText='✓'; setTimeout(() => this.innerText='📋', 1000)" 
+                                    class="text-gray-400 hover:text-indigo-600 p-1 rounded transition" title="Copy to clipboard">
+                                    📋
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-400 truncate w-full font-mono">${link.originalUrl}</p>
                         </div>
-                        <button onclick="app.showStats('${link.shortCode}')" class="bg-white border border-slate-200 text-slate-600 px-3 py-1 rounded text-xs font-bold hover:text-indigo-600 hover:border-indigo-200 transition">
-                            📊 Stats
-                        </button>
+                        
+                        <div class="flex flex-col gap-2 shrink-0">
+                            <button onclick="app.showStats('${link.shortCode}')" 
+                                class="bg-white border border-slate-200 text-slate-600 px-3 py-1 rounded text-xs font-bold hover:text-indigo-600 hover:border-indigo-200 transition flex items-center justify-center w-24 shadow-sm">
+                                📊 Stats
+                            </button>
+                            <button onclick="app.showQRModal('${link.shortUrl}')" 
+                                class="bg-white border border-slate-200 text-slate-600 px-3 py-1 rounded text-xs font-bold hover:text-indigo-600 hover:border-indigo-200 transition flex items-center justify-center w-24 shadow-sm">
+                                📱 QR Code
+                            </button>
+                        </div>
                     </div>
                 `).join('');
             }
 
             toggleQR() {
                 const qrDiv = document.getElementById('qrContainer');
-                if (qrDiv.innerHTML === '') {
+                if (qrDiv.classList.contains('hidden')) {
                     qrDiv.classList.remove('hidden');
+                    qrDiv.innerHTML = ''; // Clear prev
                     new QRCode(qrDiv, {
                         text: document.getElementById('shortUrl').value,
                         width: 128,
                         height: 128
                     });
                 } else {
-                    qrDiv.innerHTML = ''; // Toggle off
                     qrDiv.classList.add('hidden');
                 }
             }
