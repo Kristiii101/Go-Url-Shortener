@@ -35,7 +35,7 @@ The server will start on `http://localhost:8080`
 
 # 1. Clone the Repository
 
-git clone [https://github.com/YOUR_USERNAME/Go-Url-Shortener.git](https://github.com/YOUR_USERNAME/Go-Url-Shortener.git)
+git clone [https://github.com/Kristiii101/Go-Url-Shortener.git](https://github.com/Kristiii101/Go-Url-Shortener.git)
 cd Go-Url-Shortener
 
 # 2. Setup your Database
@@ -75,7 +75,8 @@ PORT=8080
 BASE_URL=http://localhost:8080
 WEB_DIR=./web
 
-# Database Connection (Supabase Transaction Mode Recommended)
+# Database Connection
+**Make sure to put your password in the the url**
 DATABASE_URL = postgresql://postgres:[YOUR-PASSWORD]@db.[id].supabase.co:5432/postgres
 
 # Security / Rate Limiting
