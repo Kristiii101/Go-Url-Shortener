@@ -34,7 +34,7 @@ The server will start on `http://localhost:8080`
 # To start the app you must:
 
 # 1. Clone the Repository
-```bash
+
 git clone [https://github.com/YOUR_USERNAME/Go-Url-Shortener.git](https://github.com/YOUR_USERNAME/Go-Url-Shortener.git)
 cd Go-Url-Shortener
 
