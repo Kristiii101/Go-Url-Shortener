@@ -16,21 +16,27 @@
 <body class="bg-slate-50 min-h-screen font-sans text-slate-800">
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <div class="text-center mb-10">
-            <h1 class="text-4xl font-extrabold text-indigo-600 mb-2 tracking-tight">🔗 Go Shortener - Karasin Kristian</h1>
-            <p class="text-slate-500">ATAD-grade URL shortening service</p>
+            <h1 class="text-4xl font-extrabold text-indigo-600 mb-2 tracking-tight">🔗 Go Shortener</h1>
+            <p class="text-slate-500">Enterprise-grade URL shortening service</p>
         </div>
 
         <div class="bg-white rounded-xl shadow-lg p-8 mb-8 border border-slate-100">
-            <div class="flex flex-col md:flex-row gap-4 mb-4">
-                <div class="flex-grow">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Target URL</label>
-                    <input type="url" id="longUrl" placeholder="https://super-long-url.com/..."
-                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
-                </div>
-                <div class="md:w-1/3">
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Target URL</label>
+                <input type="url" id="longUrl" placeholder="https://super-long-url.com/..."
+                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <div class="md:w-1/2">
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Alias (Optional)</label>
                     <input type="text" id="customCode" placeholder="custom-name"
                         class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                </div>
+                <div class="md:w-1/2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Expires (Default: 90 Days)</label>
+                    <input type="datetime-local" id="expiresAt"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-gray-600">
                 </div>
             </div>
 
@@ -49,6 +55,7 @@
                     <button id="qrBtn" class="flex-1 bg-white text-indigo-600 border border-indigo-200 px-4 py-2 rounded-lg font-semibold hover:bg-indigo-50 transition">QR</button>
                 </div>
             </div>
+            
             <div id="error" class="hidden mt-4 text-center text-red-500 text-sm font-semibold slide-in"></div>
             
             <div id="qrContainer" class="hidden flex justify-center mt-4"></div>
@@ -69,20 +76,21 @@
             <h3 class="text-xl font-bold mb-1">Analytics</h3>
             <p id="statsTitle" class="text-sm text-gray-500 mb-6 font-mono"></p>
             
-            <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-3 gap-4 mb-6">
                 <div class="bg-indigo-50 p-4 rounded-lg text-center">
                     <p class="text-2xl font-bold text-indigo-600" id="statTotal">0</p>
                     <p class="text-xs text-indigo-400 uppercase font-bold">Total Clicks</p>
                 </div>
                 <div class="bg-green-50 p-4 rounded-lg text-center">
-                    <p class="text-2xl font-bold text-green-600" id="statLast">Never</p>
+                    <p class="text-lg font-bold text-green-600 truncate" id="statLast">Never</p>
                     <p class="text-xs text-green-400 uppercase font-bold">Last Active</p>
                 </div>
+                <div class="bg-orange-50 p-4 rounded-lg text-center">
+                    <p class="text-lg font-bold text-orange-600 truncate" id="statExpiry">∞</p>
+                    <p class="text-xs text-orange-400 uppercase font-bold">Expires On</p>
+                </div>
             </div>
-
-            <div class="h-64">
-                <canvas id="clicksChart"></canvas>
-            </div>
+            <div class="h-64"><canvas id="clicksChart"></canvas></div>
         </div>
     </div>
 
@@ -113,6 +121,8 @@
             async createLink() {
                 const url = document.getElementById('longUrl').value;
                 const alias = document.getElementById('customCode').value;
+                const expiresAt = document.getElementById('expiresAt').value;
+                
                 const errDiv = document.getElementById('error');
                 const resDiv = document.getElementById('result');
                 const qrDiv = document.getElementById('qrContainer');
@@ -124,28 +134,33 @@
 
                 if (!url) return;
 
+                // Build Payload
+                const payload = { originalUrl: url };
+                if (alias) payload.customAlias = alias;
+                if (expiresAt) payload.expiresAt = new Date(expiresAt).toISOString(); // Convert to format Go likes
+
                 try {
                     const res = await fetch('/v1/links', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ originalUrl: url, customAlias: alias || undefined })
+                        body: JSON.stringify(payload)
                     });
                     
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || 'Error creating link');
 
-                    // Success
+                    // Success UI updates
                     document.getElementById('shortUrl').value = data.shortUrl;
                     resDiv.classList.remove('hidden');
                     
-                    // Add to history
                     this.history.unshift(data);
                     this.save();
                     this.renderList();
                     
-                    // Reset inputs
+                    // Clear inputs
                     document.getElementById('longUrl').value = '';
                     document.getElementById('customCode').value = '';
+                    document.getElementById('expiresAt').value = '';
 
                 } catch (e) {
                     errDiv.textContent = e.message;
@@ -157,6 +172,11 @@
                 const modal = document.getElementById('statsModal');
                 modal.classList.remove('hidden');
                 document.getElementById('statsTitle').textContent = `Link: ${code}`;
+
+                // Get Expiration from local history (easiest way)
+                const linkItem = this.history.find(l => l.shortCode === code);
+                const expiryText = linkItem && linkItem.expiresAt ? new Date(linkItem.expiresAt).toLocaleDateString() : 'Never';
+                document.getElementById('statExpiry').textContent = expiryText;
 
                 try {
                     const res = await fetch(`/v1/links/${code}/stats`);
@@ -218,10 +238,20 @@
 
             renderList() {
                 const list = document.getElementById('urlList');
-                list.innerHTML = this.history.map(link => `
+                list.innerHTML = this.history.map(link => {
+                    let expiryDisplay = '';
+                    if (link.expiresAt) {
+                        const daysLeft = Math.ceil((new Date(link.expiresAt) - new Date()) / (1000 * 60 * 60 * 24));
+                        const color = daysLeft < 3 ? 'text-red-500' : 'text-orange-500';
+                        // If daysLeft is negative, show expired
+                        const text = daysLeft < 0 ? 'Expired' : `${daysLeft} days left`;
+                        expiryDisplay = `<span class="text-[10px] font-bold ${color} ml-2 bg-slate-100 px-1 rounded">⏳ ${text}</span>`;
+                    }
+                    
+                    return `
                     <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition border border-slate-100">
                         <div class="overflow-hidden flex-grow mr-4">
-                            <div class="flex items-center gap-3 mb-1">
+                            <div class="flex items-center gap-2 mb-1">
                                 <a href="${link.shortUrl}" target="_blank" class="text-indigo-600 font-bold font-mono text-lg hover:underline truncate">
                                     ${link.shortUrl}
                                 </a>
@@ -229,6 +259,7 @@
                                     class="text-gray-400 hover:text-indigo-600 p-1 rounded transition" title="Copy to clipboard">
                                     📋
                                 </button>
+                                ${expiryDisplay}
                             </div>
                             <p class="text-xs text-gray-400 truncate w-full font-mono">${link.originalUrl}</p>
                         </div>
@@ -243,8 +274,8 @@
                                 📱 QR Code
                             </button>
                         </div>
-                    </div>
-                `).join('');
+                    </div>`;
+                }).join('');
             }
 
             toggleQR() {

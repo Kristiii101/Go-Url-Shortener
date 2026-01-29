@@ -48,15 +48,23 @@ func CreateLink(d LinkDeps) http.Handler {
 			util.WriteError(w, http.StatusBadRequest, "bad_request", "invalid JSON body")
 			return
 		}
+
+		if req.ExpiresAt == nil {
+			defaultExpiry := time.Now().UTC().AddDate(0, 0, 90)
+			req.ExpiresAt = &defaultExpiry
+		}
+
 		if req.LongURL == "" {
 			util.WriteError(w, http.StatusBadRequest, "invalid_url", "long_url is required")
 			return
 		}
+
 		canon, err := domain.CanonicalizeURL(req.LongURL)
 		if err != nil {
 			util.WriteError(w, http.StatusBadRequest, "invalid_url", "must be a valid http/https URL")
 			return
 		}
+
 		if req.ExpiresAt != nil && req.ExpiresAt.Before(time.Now()) {
 			util.WriteError(w, http.StatusBadRequest, "expiry_in_past", "expires_at must be in the future")
 			return

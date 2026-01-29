@@ -21,46 +21,54 @@ type RedirectDeps struct {
 
 // Root serves index.html on "/" and treats any other single-segment path as a key to redirect.
 func Root(webDir string, d RedirectDeps) http.Handler {
+	// Prepare the file server for the frontend
 	index := Home(webDir)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 
 		// 1. Routing Logic: Serve Frontend or API
+		// If root or explicit index.html, serve the React/HTML app
 		if path == "/" || path == "/index.html" {
 			index.ServeHTTP(w, r)
 			return
 		}
+		// Block direct access to API paths or health checks via this handler
 		if strings.HasPrefix(path, "/v1/") || strings.HasPrefix(path, "/healthz") {
 			http.NotFound(w, r)
 			return
 		}
 
 		// 2. Extract Short Code
+		// Remove the leading slash (e.g., "/AbCd" -> "AbCd")
 		key := strings.TrimPrefix(path, "/")
 		if key == "" {
 			http.NotFound(w, r)
 			return
 		}
 
-		// 3. Lookup Link
-		// We use r.Context() here because we WANT to cancel if the user disconnects
+		// 3. Lookup Link in Database
+		// We use r.Context() so we don't waste resources if the user disconnects
 		link, err := d.LinksRepo.GetByKey(r.Context(), key)
 		if err != nil {
-			// Using 404 is better than 500 for "Link not found"
+			// If link doesn't exist, return 404
 			http.NotFound(w, r)
 			return
 		}
 
-		// 4. Check Active/Expiration Status
-		now := time.Now().UTC()
-		if link.IsDisabled || (link.ExpiresAt != nil && !link.ExpiresAt.After(now)) {
-			http.Error(w, "Link Expired", http.StatusGone)
+		// 4. Check Active/Expiration Status (USER STORY #5)
+		// We check if the link is manually disabled OR if the expiration date has passed
+		if link.IsDisabled {
+			http.Error(w, "Link has been disabled", http.StatusGone) // 410 Gone
+			return
+		}
+		if link.ExpiresAt != nil && link.ExpiresAt.Before(time.Now().UTC()) {
+			http.Error(w, "Link has expired", http.StatusGone) // 410 Gone
 			return
 		}
 
 		// 5. Async Analytics (Fire and Forget)
-		// We capture the data we need BEFORE starting the goroutine
+		// We capture request data BEFORE starting the goroutine to avoid race conditions
 		userAgent := r.UserAgent()
 		ip := getRealIP(r)
 		referer := r.Referer()
@@ -71,19 +79,25 @@ func Root(webDir string, d RedirectDeps) http.Handler {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			// Pass the IP and Referer to your repo
-			// (Make sure your ClicksRepo.Insert signature matches this!)
-			err := d.ClicksRepo.Insert(ctx, link.ID, time.Now().UTC(), &ip, nil, &userAgent, &referer)
+			// Prepare the time
+			occurredAt := time.Now().UTC()
+
+			// Prepare country code (nil for now, since we don't have GeoIP yet)
+			var countryCode *string = nil
+
+			// Call Insert with exactly 7 arguments as defined in your repo
+			// We pass addresses (&ip, &userAgent, etc) because the repo expects *string
+			err := d.ClicksRepo.Insert(ctx, link.ID, occurredAt, &ip, countryCode, &userAgent, &referer)
+
 			if err != nil {
 				d.Logger.Printf("Analytics error (key=%s): %v", key, err)
 			}
 		}()
 
 		// 6. Perform Redirect
-		// 307 preserves the method (POST/GET), 302 is standard "Found".
-		// 307 is preferred for modern apps.
-		w.Header().Set("Location", link.LongURL)
-		w.WriteHeader(http.StatusTemporaryRedirect)
+		// 307 Temporary Redirect is preferred over 302 for API-like redirects
+		// to preserve the HTTP method, though 302 is also acceptable.
+		http.Redirect(w, r, link.LongURL, http.StatusTemporaryRedirect)
 	})
 }
 
